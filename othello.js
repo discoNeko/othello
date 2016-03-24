@@ -12,6 +12,7 @@
 		  [  0, -3, 0,-1,-1, 0, -3,  0],
 		  [-12,-15,-3,-3,-3,-3,-15,-12],
 		  [ 30,-12, 0,-1,-1, 0,-12, 30]]
+	var search_depth = 6;
 
 	var bb = [];
 	var wb = [];
@@ -25,7 +26,7 @@
 	var canPutInt = [];
 
 	var player;
-	var pass;
+	//var pass;
 	var end;
 	var phase;
     var requestId;
@@ -48,7 +49,7 @@
  		opponent = 0;
 
 		player = true;
-		pass = false;
+		//pass = false;
 		end = false;
 		phase = 0;
 		for(var i = 0; i < n; i++){
@@ -62,7 +63,7 @@
 		bb[4][3] = true;
 		wb[3][3] = true;
 		wb[4][4] = true;
-		bCheck();
+		bCheck(false);
 		popCnt();
 	}
 
@@ -106,6 +107,9 @@
  		}else if(opponent==2){
 			ctx.fillStyle = '#eee';
 			ctx.fillText('vs normalAI',600,410);
+ 		}else if(opponent==3){
+			ctx.fillStyle = '#eee';
+			ctx.fillText('vs negaAI',600,410);
  		}
 
 		//turnPlayer
@@ -266,7 +270,7 @@
 		wm = wsum;
 	}
 
-	function bCheck(){
+	function bCheck(v){
 		var psum = 0;
 		for(var i = 0; i < n; i++){
 			for(var j = 0; j < n; j++){
@@ -275,14 +279,9 @@
 			}
 		}
 		if(psum==0){
-			if(!pass){
-				if(player){
-					player = false;
-				}else{
-					player = true;
-				}
-				pass = true;
-				bCheck();
+			if(!v){
+				player = !player;
+				bCheck(true);
 			}else{
 				end = true;
 			}
@@ -293,7 +292,7 @@
 		while(true){
 			randomNext();
 			player = true;
-			bCheck();
+			bCheck(false);
 			popCnt();
 			if(player || end)break;
 		}
@@ -305,8 +304,8 @@
 		for(var i = 0; i < n; i++){
 			for(var j = 0; j < n; j++){
 				if(canPut(i,j)){
-					var rnd = Math.floor(Math.random()*10) - 5;
-					if(max==-99999 || max<eb[i][j]+rnd){
+					var rnd = Math.floor(Math.random()*10);
+					if(max==-99999 || max<eb[i][j] || rnd<5){
 						max = eb[i][j];
 						nr = i;
 						nc = j;
@@ -316,7 +315,7 @@
 		}
 		lr = nr;
 		lc = nc;
-		pass = false;
+		//pass = false;
 		canPut(nr,nc);
 		rev(nr,nc);
 		wb[nr][nc] = true;
@@ -326,7 +325,7 @@
 		while(true){
 			normalNext();
 			player = true;
-			bCheck();
+			bCheck(false);
 			popCnt();
 			if(player || end)break;
 		}
@@ -352,7 +351,7 @@
 		//console.log(" ");
 		lr = nr;
 		lc = nc;
-		pass = false;
+		//pass = false;
 		canPut(nr,nc);
 		rev(nr,nc);
 		wb[nr][nc] = true;
@@ -414,70 +413,306 @@
 		return pts;
 	}
 
-/*
-
-	function abAI(){
+	function negaAI(){
 		while(true){
-			abNext();
+			var pos = negaNext(wb,bb,false,search_depth,-9999,9999);
+			console.log("pos "+pos.row+" "+pos.col);
+			revBoardCheck(pos.row,pos.col);
+			wb[pos.row][pos.col] = true;
+			lr = pos.row;
+			lc = pos.col;
 			player = true;
-			bCheck();
+			bCheck(false);
 			popCnt();
 			if(player || end)break;
 		}
+		console.log(" ");
 	}
 
-	function abNext(tbb,twb,r,c,p,depth,a,b){
-		var tmp_bb = [];
-		var tmp_wb = [];
-		for(int i = 0; i < ; i++){
-			for(int j = 0; j < ; j++){
-				tmp_bb[i][j] = tbb[i][j];
-				tmp_wb[i][j] = twb[i][j];
+	function revBoardCheck(r,c){
+		var dir = [];
+		var dd = [0,-1,0,1,-1,-1,1,1,0];
+		var row,col;
+		for(var i = 0; i < n; i++){
+			var op = false;
+			var wall = false;
+			var sp = false;
+			dir[i] = false;
+			for(var j = 1; j < 8; j++){
+				row = r + dd[i]*j;
+				col = c + dd[i+1]*j;
+				if(row<0 || col<0 || row>n-1 || col>n-1)break;	
+				if(bb[row][col]){
+					op = true;
+				}else if(wb[row][col]){
+					wall = true;
+				}else{
+					sp = true;
+				}
+				if(sp)break;
+				if(wall){
+					if(op){
+						dir[i] = true;
+					}
+					break;
+				}
 			}
 		}
+		revBoard(dir,r,c);
+	}
 
-		var state = bState(tmp_bb,tmp_wb,p);
-
-		if(state == "end"){
-			return endStateCheck(tbb,twb,p);
-		}else if(state == "pass"){
-			p = !p;
-		}else if(depth<1){
-			return calcEval(tbb,twb);
+	function revBoard(dir,r,c){
+		var dd = [0,-1,0,1,-1,-1,1,1,0];
+		var row,col;
+		for(var i = 0; i < n; i++){
+			if(dir[i]){
+				for(var j = 1; j < 7; j++){
+					row = r + dd[i]*j;
+					col = c + dd[i+1]*j;	
+					if(bb[row][col]){
+						wb[row][col] = true;
+						bb[row][col] = false;					
+					}else{
+						break;
+					}
+				}
+			}
 		}
-
-
 	}
 
-	function bState(tbb,twb,p){
-		var str = bStateCheck(tbb,twb,p,false);
-		return str;
+	function negaNext(ab,enb,passed,depth,a,b){
+		/*
+		if(false){
+			var s = [];
+			for(var i = 0; i < n; i++){
+				s[i] = [];
+				for(var j = 0; j < n; j++){
+					if(ab[i][j]){
+						s[i][j]=" O";
+					}else if(enb[i][j]){
+						s[i][j]=" X";
+					}else{
+						s[i][j]=" _";
+					}
+				}
+			}
+			for(var i = 0; i < n; i++){
+				console.log(s[i][0]+s[i][1]+s[i][2]+s[i][3]+s[i][4]+s[i][5]+s[i][6]+s[i][7]+i);
+			}
+			console.log(" ");
+		}
+		*/
+		var or,oc,tmp,max;
+		if(depth<1)
+			return calcBoardEval(ab,enb);
+
+		var child = negaChild(ab,enb);
+
+		if(passed && child.passed)
+			return calcBoardFinal(ab,enb);
+
+		if(depth==search_depth)max = -99999;
+		if(child.passed){
+			//pass
+			a = Math.max(a,-negaNext(enb,ab,child.passed,depth-1,-b,-a));
+			if(depth==search_depth && max<a){
+				max = a;
+				or = child.row[i];
+				oc = child.col[i];
+			}
+			if(a>=b){
+				return a
+			}
+		}else{
+			for(var i = 0; i < child.row.length; i++){
+				var tempb = moveBoardCheck(ab,enb,child.row[i],child.col[i]);
+				a = Math.max(a,-negaNext(tempb.tenb,tempb.tab,child.passed,depth-1,-b,-a));
+				//if(depth==search_depth)console.log("a "+a+" pos "+child.row[i]+" "+child.col[i]);
+				//console.log("d "+depth+" "+max+" ? "+a+" ");
+				if(depth==search_depth && max<a){
+					max = a;
+					or = child.row[i];
+					oc = child.col[i];
+					//if(depth==search_depth)console.log("[max] "+max+" rc "+or+" "+oc);
+				}
+				//if(depth==1)console.log("d "+depth+" a "+a+" b "+b+" pos "+child.row[i]+" "+child.col[i]);
+				if(a>=b){
+					return a
+				}
+			}
+		}
+/*
+		if(child.passed){
+			//pass
+			child = negaChild(enb,ab);
+			for(var i = 0; i < child.row.length; i++){
+				var tempb = moveBoardCheck(ab,enb,child.row[i],child.col[i]);
+				a = Math.max(a,negaNext(tempb.tab,tempb.tenb,child.passed,depth-1,a,b));
+				//console.log("pas d "+depth+" "+max+" ? "+a+" ");
+				if(depth==search_depth && max<a){
+					max = a;
+					or = child.row[i];
+					oc = child.col[i];
+				}
+				if(a>=b){
+					return a
+				}
+			}
+		}else{
+			for(var i = 0; i < child.row.length; i++){
+				var tempb = moveBoardCheck(ab,enb,child.row[i],child.col[i]);
+				a = Math.max(a,-negaNext(tempb.tenb,tempb.tab,child.passed,depth-1,-b,-a));
+				//if(depth==search_depth)console.log("a "+a+" pos "+child.row[i]+" "+child.col[i]);
+				//console.log("d "+depth+" "+max+" ? "+a+" ");
+				if(depth==search_depth && max<a){
+					max = a;
+					or = child.row[i];
+					oc = child.col[i];
+					//if(depth==search_depth)console.log("[max] "+max+" rc "+or+" "+oc);
+				}
+				//if(depth==1)console.log("d "+depth+" a "+a+" b "+b+" pos "+child.row[i]+" "+child.col[i]);
+				if(a>=b){
+					return a
+				}
+			}
+		}
+		*/
+		//if(depth==search_depth)console.log("toutatu "+or+" "+oc);
+		if(depth==search_depth){
+			return {a:a,row:or,col:oc};
+		}else{
+			return a
+		}
 	}
 
-	function bStateCheck(tbb,twb,p,passed){
-		var pa = false;
+	function moveBoardCheck(ab,enb,r,c){
+		var dir = [];
+		var dd = [0,-1,0,1,-1,-1,1,1,0];
+		var row,col;
+		for(var i = 0; i < n; i++){
+			var op = false;
+			var wall = false;
+			var sp = false;
+			dir[i] = false;
+			for(var j = 1; j < 8; j++){
+				row = r + dd[i]*j;
+				col = c + dd[i+1]*j;
+				if(row<0 || col<0 || row>n-1 || col>n-1)break;	
+				if(enb[row][col]){
+					op = true;
+				}else if(ab[row][col]){
+					wall = true;
+				}else{
+					sp = true;
+				}
+				if(sp)break;
+				if(wall){
+					if(op){
+						dir[i] = true;
+					}
+					break;
+				}
+			}
+		}
+		return moveBoard(ab,enb,dir,r,c);
+	}
+
+	function moveBoard(ab,enb,dir,r,c){
+		var tab = [];
+		var tenb = [];
+		for(var i = 0; i < n; i++){
+			tab[i] = [];
+			tenb[i] = [];
+			for(var j = 0; j < n; j++){
+				tab[i][j] = ab[i][j];
+				tenb[i][j] = enb[i][j];
+			}
+		}
+		var dd = [0,-1,0,1,-1,-1,1,1,0];
+		var row,col;
+		for(var i = 0; i < n; i++){
+			if(dir[i]){
+				for(var j = 1; j < 7; j++){
+					row = r + dd[i]*j;
+					col = c + dd[i+1]*j;	
+					if(tenb[row][col]){
+						tab[row][col] = true;
+						tenb[row][col] = false;					
+					}else{
+						break;
+					}
+				}
+			}
+		}
+		tab[r][c] = true;
+		return {tab:tab,tenb:tenb};
+	}
+
+	function calcBoardEval(ab,enb){
+		//high pts is better choice
+		var pts = 0;
 		for(var i = 0; i < n; i++){
 			for(var j = 0; j < n; j++){
-				if(bPutCheck(tbb,twb,p,i,j))
-					pa = true;
+				if(enb[i][j]){
+					pts -= eb[i][j];
+				}else if(ab[i][j]){
+					pts += eb[i][j];
+				}
 			}
 		}
-		if(!pa){
-			if(!passed){
-				bStateCheck(tbb,twb,p,true);
-			}else{
-				return "end";
+		//console.log(pts);
+		return pts;
+	}
+
+	function calcBoardFinal(ab,enb){
+		//high pts is better choice
+		var pts = 0;
+		for(var i = 0; i < n; i++){
+			for(var j = 0; j < n; j++){
+				if(enb[i][j]){
+					pts--;
+				}else if(ab[i][j]){
+					pts++;
+				}
 			}
 		}
-		if(passed){
-			return "pass";
+		if(pts>0){
+			return 1000;
+		}else if(pts<0){
+			return -1000;
 		}else{
-			return "ok";
+			return 0;
 		}
 	}
 
-	function bPutCheck(tbb,twb,p,r,c){
-		if(tbb[r][c] || twb[r][c])return false;
+	function negaChild(ab,enb){
+		var nr = [];
+		var nc = [];
+		for(var i = 0; i < n; i++){
+			for(var j = 0; j < n; j++){
+				if(bPutCheck(ab,enb,i,j)){
+					nr.push(i);
+					nc.push(j);
+				}
+			}
+		}
+		if(nr.length>0){
+			return {
+				row : nr,
+				col : nc,
+				passed : false
+			};
+		}else{
+			return {
+				row : [],
+				col : [],
+				passed : true
+			};
+		}
+	}
+
+	function bPutCheck(ab,enb,r,c){
+		if(ab[r][c] || enb[r][c])return false;
 		var v = false;
 		var dd = [0,-1,0,1,-1,-1,1,1,0];
 		var row,col;
@@ -489,9 +724,9 @@
 				row = r + dd[i]*j;
 				col = c + dd[i+1]*j;
 				if(row<0 || col<0 || row>n-1 || col>n-1)break;	
-				if((p && twb[row][col]) || (!p && tbb[row][col])){
+				if(enb[row][col]){
 					op = true;
-				}else if((p && tbb[row][col]) || (!p && twb[row][col])){
+				}else if(ab[row][col]){
 					wall = true;
 				}else{
 					sp = true;
@@ -506,48 +741,6 @@
 		return v;
 	}
 
-	function endStateCheck(tbb,twb,p){
-		return calcWinner(tbb,twb,p);
-	}
-
-	function calcWinner(tbb,twb,p){
-		var bsum = 0;
-		var wsum = 0;
-		for(var i = 0; i < n; i++){
-			for(var j = 0; j < n; j++){
-				if(tbb[i][j]){
-					bsum++;
-				}else if(twb[i][j]){
-					wsum++;
-				}
-			}
-		}
-		if((!P && bsum>wsum) || (p && wsum>bsum)){
-			return -1000;
-		}else if((!p && wsum>bsum) || (p && bsum>wsum)){
-			return 1000;
-		}else{
-			return 0;
-		}
-	}
-
-	function calcEval(tbb,twb){
-		//high pts is better choice
-		var pts = 0;
-		for(var i = 0; i < n; i++){
-			for(var j = 0; j < n; j++){
-				if(tbb[i][j]){
-					pts -= eb[i][j];
-				}else if(twb[i][j]){
-					pts += eb[i][j];
-				}
-			}
-		}
-		return pts;
-	}
-
-*/
-
 	function onClick(e){
 		var rect = e.target.getBoundingClientRect();
 		var x =  Math.round(e.clientX - rect.left);
@@ -560,7 +753,7 @@
 
 		//vsOpponentChange
 		if(phase == 0 && 580<x && x<760 && 370<y && y<420){
-			if(opponent<2){
+			if(opponent<3){
 				opponent++;
 			}else{
 				opponent = 0;
@@ -577,7 +770,7 @@
 						phase = 1;
 						lr = i;
 						lc = j;
-						pass = false;
+						//pass = false;
 						rev(i,j);
 						if(player){
 							//turn_black
@@ -588,15 +781,18 @@
 							wb[i][j] = true;
 							player = true;
 						}
-						bCheck();
-						popCnt();
 						if(!player && opponent==1){
 							//randomAI
 							randomAI();
 						}else if(!player && opponent==2){
 							//normal
 							normalAI();
+						}else if(!player && opponent==3){
+							//negamax
+							negaAI();
 						}
+						bCheck(false);
+						popCnt();
 					}
 				}
 			}
