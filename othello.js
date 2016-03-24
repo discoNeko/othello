@@ -781,6 +781,8 @@
 							wb[i][j] = true;
 							player = true;
 						}
+						bCheck(false);
+						popCnt();
 						if(!player && opponent==1){
 							//randomAI
 							randomAI();
@@ -791,8 +793,6 @@
 							//negamax
 							negaAI();
 						}
-						bCheck(false);
-						popCnt();
 					}
 				}
 			}
