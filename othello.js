@@ -109,7 +109,13 @@
 			ctx.fillText('vs normalAI',600,410);
  		}else if(opponent==3){
 			ctx.fillStyle = '#eee';
-			ctx.fillText('vs negaAI',600,410);
+			ctx.fillText('vs nega3AI',600,410);
+ 		}else if(opponent==4){
+			ctx.fillStyle = '#eee';
+			ctx.fillText('vs nega6AI',600,410);
+ 		}else if(opponent==5){
+			ctx.fillStyle = '#eee';
+			ctx.fillText('vs nega8AI',600,410);
  		}
 
 		//turnPlayer
@@ -753,8 +759,11 @@
 
 		//vsOpponentChange
 		if(phase == 0 && 580<x && x<760 && 370<y && y<420){
-			if(opponent<3){
+			if(opponent<5){
 				opponent++;
+				if(opponent==3)search_depth=3;
+				if(opponent==4)search_depth=6;
+				if(opponent==5)search_depth=8;
 			}else{
 				opponent = 0;
 			}
@@ -790,7 +799,13 @@
 							//normal
 							normalAI();
 						}else if(!player && opponent==3){
-							//negamax
+							//negamax3
+							negaAI();
+						}else if(!player && opponent==4){
+							//negamax6
+							negaAI();
+						}else if(!player && opponent==5){
+							//negamax8
 							negaAI();
 						}
 					}
