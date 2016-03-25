@@ -26,7 +26,6 @@
 	var canPutInt = [];
 
 	var player;
-	//var pass;
 	var end;
 	var phase;
     var requestId;
@@ -49,7 +48,6 @@
  		opponent = 0;
 
 		player = true;
-		//pass = false;
 		end = false;
 		phase = 0;
 		for(var i = 0; i < n; i++){
@@ -91,13 +89,15 @@
  		ctx.fillRect(0,0,w,h);
 
  		//vsOpponent
+		ctx.font= 'bold 20px meiryo';
  		if(phase == 0){
+ 			ctx.fillStyle = '#eee';
+ 			ctx.fillText('^ click',640,450);
 			ctx.fillStyle = '#e71';
  		}else{
 			ctx.fillStyle = '#888';
  		}
 		ctx.fillRect(580,370,180,50);
-		ctx.font= 'bold 20px meiryo';
  		if(opponent==0){
 			ctx.fillStyle = '#eee';
 			ctx.fillText('vs Self',600,410);
@@ -120,7 +120,7 @@
 
 		//turnPlayer
 		if(end){
-			//turn_end
+			//game_end
 			ctx.fillStyle = '#e71';
 		}else if(player){
 			//turn_black
@@ -129,7 +129,12 @@
 			//turn_white
 			ctx.fillStyle = '#eee';
 		}
-		ctx.fillRect(600,50,150,50);
+		ctx.fillRect(580,50,180,50);
+		if(end){
+			ctx.fillStyle = '#eee';
+			ctx.font= 'bold 40px meiryo';
+			ctx.fillText('reset',620,88);
+		}
 		
 		//popCnt
 		ctx.fillStyle = '#111';
@@ -417,6 +422,65 @@
 		}
 		//console.log("bp "+bp+" wp "+wp);
 		return pts;
+	}
+
+	function namepAI(){
+		while(true){
+			var pos = namepNext(wb,bb,false,search_depth,-9999,9999);
+			console.log("pos "+pos.row+" "+pos.col);
+			revBoardCheck(pos.row,pos.col);
+			wb[pos.row][pos.col] = true;
+			lr = pos.row;
+			lc = pos.col;
+			player = true;
+			bCheck(false);
+			popCnt();
+			if(player || end)break;
+		}
+		console.log(" ");
+	}
+
+	function namepNext(ab,enb,passed,depth,a,b){
+		var or,oc,tmp,max;
+		if(depth<1)
+			return calcBoardEval(ab,enb);
+
+		var child = negaChild(ab,enb);
+
+		if(passed && child.passed)
+			return calcBoardFinal(ab,enb);
+
+		if(depth==search_depth)max = 99999;
+		if(child.passed){
+			//pass
+			a = Math.max(a,-negaNext(enb,ab,child.passed,depth-1,-b,-a));
+			if(depth==search_depth && max>a){
+				max = a;
+				or = child.row[i];
+				oc = child.col[i];
+			}
+			if(a>=b){
+				return a
+			}
+		}else{
+			for(var i = 0; i < child.row.length; i++){
+				var tempb = moveBoardCheck(ab,enb,child.row[i],child.col[i]);
+				a = Math.max(a,-negaNext(tempb.tenb,tempb.tab,child.passed,depth-1,-b,-a));
+				if(depth==search_depth && max>a){
+					max = a;
+					or = child.row[i];
+					oc = child.col[i];
+				}
+				if(a>=b){
+					return a
+				}
+			}
+		}
+		if(depth==search_depth){
+			return {a:a,row:or,col:oc};
+		}else{
+			return a
+		}
 	}
 
 	function negaAI(){
@@ -794,7 +858,8 @@
 						popCnt();
 						if(!player && opponent==1){
 							//randomAI
-							randomAI();
+							//randomAI();
+							namepAI();
 						}else if(!player && opponent==2){
 							//normal
 							normalAI();
