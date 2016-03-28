@@ -1,5 +1,6 @@
 # othello
-js / othello
+othello
+![タイトル画面](explain.png)  
 
 --
 
